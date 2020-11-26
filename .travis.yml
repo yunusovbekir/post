@@ -2,8 +2,10 @@ language: python
 python:
   - "3.8"
 
-install:
-  - pip install -r requirements.txt
+services:
+  - docker
+
+before_script: pip install docker-compose
 
 script:
-  - cd app/ && coverage run --source='.' python manage.py test && coveralls
+  - docker-compose run app sh -c "coverage run --source='.' python manage.py test && coveralls && flake8"

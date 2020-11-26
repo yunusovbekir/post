@@ -2,19 +2,24 @@ version: '3'
 
 services:
 
-#  nginx-proxy:
-#    image: jwilder/nginx-proxy
-#    container_name: nginx-proxy
-#    restart: "always"
-#    ports:
-#      - "80:80"
-#    volumes:
-#      - /var/run/docker.sock:/tmp/docker.sock:ro
-#      - ./_nginx/vhost/:/etc/nginx/vhost.d:ro
-#      - ./_nginx/conf.d/client_max_body_size.conf:/etc/nginx/conf.d/client_max_body_size.conf:ro
-#      - ./app/static:/web/static
-#      - ./app/media:/web/media
-
+  app:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      - DB_HOST=db_name
+      - DB_NAME=db_user
+      - DB_USER=postgres
+      - DB_PASS=6NwpPtvGyCsMLAKDZtazEP9WjANze25eP3e2UJdWrgrrKq
+    depends_on:
+      - postgres
 
   postgres:
     container_name:  postgres-db
@@ -27,70 +32,37 @@ services:
     environment:
       - LC_ALL=C.UTF-8
 
-  redis:
-    image: redis:5
-    restart: "on-failure"
-    container_name: redis
+#  redis:  # no need for redis yet
+#    image: redis:5
+#    restart: "on-failure"
+#    container_name: redis
+#    environment:
+#      - REDIS_HOST=redis
+#      - REDIS_PORT=6379
+#      - REDIS_PASSWORD=dKqs72RhtaPPYyfN
+#    ports:
+#      - 127.0.0.1:6379:6379
+#    volumes:
+#      - /shared/redisdb:/var/lib/redis
 
-    env_file: .env
-    ports:
-      - 127.0.0.1:6379:6379
-    volumes:
-      - /shared/redisdb:/var/lib/redis
-
-
-  celery:
-    container_name: celery
-    build: .
-    restart: "always"
-    command: celery --app=app.celery:app worker -B --loglevel=DEBUG
-    env_file: .env
-    environment:
-      - LANG=C.UTF-8
-      - LANG=en_US.UTF-8
-      - LANGUAGE=en_US:en
-      - LC_ALL=en_US.UTF-8
-      - STAGING=True
-    volumes:
-      - ./app:/code
-      - /shared/media:/code/media
-    links:
-      - redis
-      - postgres
-    depends_on:
-      - redis
-      - postgres
-
-
-  web:
-    container_name: app
-    build: .
-    restart: "always"
-    env_file: .env
-    environment:
-      - VIRTUAL_HOST=
-      - VIRTUAL_PORT=8000
-      - HTTP_PORT=8000
-      - STATS_PORT=8001
-      - DEBUG=True
-      - LANG=C.UTF-8
-      - LANG=en_US.UTF-8
-      - LANGUAGE=en_US:en
-      - LC_ALL=en_US.UTF-8
-    volumes:
-      - ./app:/code
-      - ./uwsgi.ini:/conf/uwsgi.ini
-      - /shared/media:/code/media
-    ports:
-      - "8015:8000"
+#  celery:  # no need for celery yet
+#    container_name: celery
+#    build: .
+#    restart: "always"
+#    command: celery --app=app.celery:app worker -B --loglevel=DEBUG
+#    env_file: .env
+#    environment:
+#      - LANG=C.UTF-8
+#      - LANG=en_US.UTF-8
+#      - LANGUAGE=en_US:en
+#      - LC_ALL=en_US.UTF-8
+#      - STAGING=True
+#    volumes:
+#      - ./app:/code
+#      - /shared/media:/code/media
 #    links:
+#      - redis
 #      - postgres
-    depends_on:
-      - "postgres"
-
-
-
-networks:
-  default:
-    external:
-      name: nginx-proxy
+#    depends_on:
+#      - redis
+#      - postgres

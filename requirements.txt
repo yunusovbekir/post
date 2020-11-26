@@ -15,7 +15,8 @@ colorama==0.4.4
 configparser==5.0.1
 coreapi==2.3.3
 coreschema==0.0.4
-coverage==5.0.3
+coverage==5.3
+coveralls==2.2.0
 crayons==0.4.0
 cryptography==3.2.1
 defusedxml==0.7.0rc1
@@ -33,6 +34,7 @@ django-rest-knox==4.1.0
 django-timezone-field==4.0
 djangorestframework==3.11.0
 djangorestframework-jwt==1.11.0
+docopt==0.6.2
 drf-yasg==1.17.1
 elasticsearch==7.6.0
 elasticsearch-dsl==7.1.0

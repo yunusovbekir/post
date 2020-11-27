@@ -1,9 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
-from django.utils import timezone
-from django.db.models import Q
-from django.http import JsonResponse
 
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -177,60 +174,57 @@ class AuthorProfileViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (AllowAny,)
 
 
-def get_page(request, queryset):
+def paginated_response(request, queryset, serializer):
     paginator = Paginator(queryset, 4)
     page = request.GET.get('page') if request.GET.get('page') else 1
     data = paginator.get_page(page)
-    return paginator, data
+
+    serializers = serializer(
+        data, context={"request": request}, many=True
+    )
+
+    return Response(
+        {
+            "data": serializers.data,
+            "pages": paginator.num_pages,
+            "current_page": data.number,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 class PublicAuthorPostsAPIView(generics.ListAPIView):
     permission_classes = (AllowAny,)
+    serializer_class = PublicPostListModelSerializer
 
     def get(self, *args, **kwargs):
-        author = get_user_model().objects.get(id=self.kwargs["pk"])
+        author = User.objects.get(id=self.kwargs["pk"])
         queryset = Post.objects.filter(
             status='Open',
             is_approved=True,
             author=author
-        ).filter(Q(end_date__gte=timezone.now()) | Q(end_date=None))
-
-        paginator, data = get_page(self.request, queryset)
-
-        serializers = PublicPostListModelSerializer(
-            data, context={"request": self.request}, many=True
         )
-        response = {
-            "data": serializers.data,
-            "pages": paginator.num_pages,
-            "current_page": data.number,
-        }
 
-        return JsonResponse(response, safe=False)
+        return paginated_response(
+            self.request, queryset, self.serializer_class
+        )
 
 
 class PublicUserSavedPostsAPIView(generics.ListAPIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+    serializer_class = PublicPostListModelSerializer
 
     def get(self, *args, **kwargs):
-        if self.request.user.is_authenticated:
 
-            queryset = self.request.user.saved_news.all()
-
-            if 'category' in self.request.GET and self.request.GET['category']:
-                category = self.request.GET['category']
-                queryset = queryset.filter(category__in=[category])
-
-            paginator, data = get_page(self.request, queryset)
-
-            serializers = PublicPostListModelSerializer(
-                data, context={"request": self.request}, many=True
+        queryset = self.request.user.saved_news.all()
+        try:
+            queryset = queryset.filter(
+                category__in=[self.request.query_params.get('category')]
             )
-            response = {
-                "data": serializers.data,
-                "pages": paginator.num_pages,
-                "current_page": data.number,
-            }
+        except AttributeError:
+            pass
 
-            return JsonResponse(response, safe=False)
+        return paginated_response(
+            self.request, queryset, self.serializer_class
+        )

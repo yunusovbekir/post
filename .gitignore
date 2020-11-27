@@ -1,5 +1,6 @@
 postgredb/
 redisdb/
+postgres/
 .venv/
 .idea/
 *.pyc

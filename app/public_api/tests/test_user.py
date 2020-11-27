@@ -2,6 +2,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
+
 from ..serializers.user import PublicUserRegisterSerializer
 from news.models import Post, Category
 from user.models import AuthorSocialMediaAccounts
@@ -13,6 +14,10 @@ LOGIN_URL = reverse('public_api:user-login')
 
 def create_user(**data):
     return USER.objects.create_user(**data)
+
+
+def create_post(**data):
+    return Post.objects.create(**data)
 
 
 class PublicUserRegisterApiTests(APITestCase):
@@ -369,7 +374,7 @@ class PublicUserProfileUpdateApiTests(APITestCase):
             "title": "test post",
             "author": self.secondary_user,
         }
-        self.post = Post.objects.create(**post_data)
+        self.post = create_post(**post_data)
 
     def test_public_user_retrieve_request_successful(self):
         """
@@ -478,3 +483,84 @@ class AuthorProfileApiTests(APITestCase):
         self.user.save()
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class PublicAuthorPostsApiTests(APITestCase):
+
+    def setUp(self):
+        """ Create User and Post data """
+        author_data = {
+            "email": "bekir@labrin.tech",
+            "first_name": "Author",
+            "last_name": "Example",
+        }
+        user_data = {
+            "email": "user@user.data",
+            "first_name": "User",
+            "last_name": "Example",
+        }
+        self.author = create_user(**author_data)
+        self.user = create_user(**user_data)
+
+        self.post_data_list = [
+            {
+                "title": "Test Post 1",
+                "author": self.author,
+                "status": "Open",
+                "is_approved": True,
+            },
+            {
+                "title": "Test Post 2",
+                "author": self.author,
+                "status": "Closed",
+                "is_approved": True,
+            },
+            {
+                "title": "Test Post 3",
+                "author": self.author,
+                "status": "Staff only",
+                "is_approved": True,
+            },
+            {
+                "title": "Test Post 4",
+                "author": self.user,
+                "status": "Open",
+                "is_approved": True,
+            },
+            {
+                "title": "Test Post 5",
+                "author": self.author,
+                "status": "Open",
+                "is_approved": False,
+            }
+        ]
+        for data in self.post_data_list:
+            create_post(**data)
+
+        self.author_posts_list_url = reverse(
+            'public_api:author-posts', kwargs={'pk': self.author.id}
+        )
+
+    def get_valid_posts_count(self, data):
+        valid_posts_list = [
+            post for post in data if (
+                    post.get('status') == 'Open' and
+                    post.get('author') == self.author and
+                    post.get('is_approved')
+            )
+        ]
+        return len(valid_posts_list)
+
+    def test_get_request_return_author_posts(self):
+        """
+        Anyone can make a get request.
+        Endpoint should return only requested author's open and approved posts.
+        """
+        response = self.client.get(self.author_posts_list_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(
+            len(response.data.get('data')),
+            self.get_valid_posts_count(self.post_data_list)
+        )

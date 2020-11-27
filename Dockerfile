@@ -2,6 +2,7 @@ FROM python:3.7-alpine
 
 ENV PYTHONUNBUFFERED 1
 
+COPY .env .env
 COPY ./requirements.txt /requirements.txt
 RUN apk add --update --no-cache linux-headers
 RUN apk add --update --no-cache postgresql-client jpeg-dev

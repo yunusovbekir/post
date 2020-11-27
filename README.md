@@ -29,7 +29,7 @@ $ python manage.py createsuperuser
 ### Run tests
 ```sh
 # post/app/
-python manage.py tests
+python manage.py test
 ```
 
 ### Check PEP8 errors

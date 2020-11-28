@@ -19,5 +19,5 @@ COPY ./app /app
 
 RUN adduser -D user
 RUN chown -R user:user /app
-RUN chmod -R 755 /app
+RUN chmod -R 777 /app
 USER user

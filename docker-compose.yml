@@ -18,47 +18,6 @@ services:
       - postgres
 
   postgres:
-    container_name:  postgres-db
-    image:           postgres:9.6
-    ports:
-      - 5432:5432 # Bind host port 5432 to PostgreSQL port 5432
-    volumes:
-      - ./postgredb:/var/lib/postgresql/data
-    env_file: .env
-    environment:
-      - LC_ALL=C.UTF-8
-
-#  redis:  # no need for redis yet
-#    image: redis:5
-#    restart: "on-failure"
-#    container_name: redis
-#    environment:
-#      - REDIS_HOST=redis
-#      - REDIS_PORT=6379
-#      - REDIS_PASSWORD=dKqs72RhtaPPYyfN
-#    ports:
-#      - 127.0.0.1:6379:6379
-#    volumes:
-#      - /shared/redisdb:/var/lib/redis
-
-#  celery:  # no need for celery yet
-#    container_name: celery
-#    build: .
-#    restart: "always"
-#    command: celery --app=app.celery:app worker -B --loglevel=DEBUG
-#    env_file: .env
-#    environment:
-#      - LANG=C.UTF-8
-#      - LANG=en_US.UTF-8
-#      - LANGUAGE=en_US:en
-#      - LC_ALL=en_US.UTF-8
-#      - STAGING=True
-#    volumes:
-#      - ./app:/code
-#      - /shared/media:/code/media
-#    links:
-#      - redis
-#      - postgres
-#    depends_on:
-#      - redis
-#      - postgres
+    image: postgres:10-alpine
+    env_file:
+      - .env
